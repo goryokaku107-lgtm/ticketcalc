@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>五稜郭タワーチケット計算機</title>
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --accent-yellow: #fff176;
+            --net-blue: #b2ebf2;
+            --net-pink: #f8bbd0;
+            --border-color: #bbb;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            background-color: var(--bg-color); 
+            margin: 0; padding: 10px; color: #333;
+        }
+
+        .container { 
+            background: white; border-radius: 12px; padding: 15px; 
+            width: 100%; max-width: 500px; margin: 0 auto;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
+        }
+
+        .header-top { border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 15px; }
+        .title-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+        .date-box { font-size: 0.95em; color: #444; font-weight: bold; }
+
+        .radio-group { 
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 6px; background: #eee; padding: 4px; border-radius: 8px;
+        }
+        .radio-group label {
+            display: block; text-align: center; padding: 10px 0;
+            font-size: 1em; background: #eee; border-radius: 6px; cursor: pointer;
+        }
+        .radio-group input { display: none; }
+        .radio-group input:checked + span {
+            display: block; background: white; padding: 10px 0; margin: -10px 0;
+            border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            font-weight: bold; color: #000;
+        }
+
+        .row { 
+            display: grid; grid-template-columns: 1.8fr 1.2fr 1.1fr 1.5fr; 
+            align-items: center; gap: 4px; padding: 10px 0; border-bottom: 1px solid #eee;
+        }
+        
+        .label { font-size: 1em; font-weight: bold; }
+        
+        input[type="number"], input[type="text"] { 
+            width: 100%; height: 44px; text-align: right; 
+            padding: 5px; font-size: 1.15em; border: 1px solid var(--border-color); 
+            border-radius: 6px; -webkit-appearance: none; color: #000;
+        }
+
+        .input-unit { background-color: #fdfdfd; color: #444; font-size: 0.95em !important; border: none !important; }
+        .input-count { background-color: #fffde7; border: 2.5px solid #ffd54f !important; font-weight: bold; }
+        .input-subtotal { background-color: #f1f3f5; border: none !important; font-weight: 600; }
+
+        .total-section { 
+            background: #f8f9fa; padding: 15px; border-radius: 10px;
+            margin-top: 10px; border: 1px solid #ddd;
+        }
+        .total-box { 
+            background-color: var(--accent-yellow); font-size: 2em !important; 
+            font-weight: 900; height: 65px !important; border: 2.5px solid #333 !important; 
+        }
+        .tax-row { display: flex; justify-content: space-between; gap: 10px; margin-top: 12px; font-size: 0.9em; font-weight: bold; }
+
+        .fee-area { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+        .fee-box { border: 1.5px solid #aaa; padding: 10px; border-radius: 10px; }
+        .fee-10 { background-color: #e3f2fd; }
+        .fee-15 { background-color: #fff3e0; }
+        .fee-box h3 { margin: 0 0 10px 0; font-size: 1.05em; text-align: center; border-bottom: 1px solid rgba(0,0,0,0.1); }
+        
+        .fee-row { margin-bottom: 12px; }
+        .fee-row span { display: block; font-size: 0.85em; color: #333; font-weight: bold; }
+        
+        .emphasized-input { 
+            font-weight: 900 !important; font-size: 1.25em !important; 
+            border: 2.5px solid #333 !important; height: 48px !important;
+        }
+        .fee-10 .emphasized-input { background-color: var(--net-blue); }
+        .fee-15 .emphasized-input { background-color: var(--net-pink); }
+
+        .btn-reset { 
+            width: 100%; background: #444; color: white; border: none; 
+            padding: 16px; border-radius: 8px; font-weight: bold;
+            margin-top: 25px; font-size: 1.2em;
+        }
+        .btn-reset:active { background: #000; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-top">
+        <div class="title-row">
+            <h2 style="margin:0; font-size:1.4em;">五稜郭タワー計算機</h2>
+            <div id="DATEBOX" class="date-box"></div>
+        </div>
+        <div class="radio-group">
+            <label><input type="radio" name="mode" id="SB01" checked onchange="calculate()"><span>割引</span></label>
+            <label><input type="radio" name="mode" id="SB02" onchange="calculate()"><span>通常</span></label>
+            <label><input type="radio" name="mode" id="SB03" onchange="calculate()"><span>旧料</span></label>
+        </div>
+    </div>
+
+    <div class="calc-area">
+        <div class="row">
+            <div class="label">大人</div>
+            <div><input type="number" id="TBP1" class="input-unit" readonly tabindex="-1"></div>
+            <div><input type="number" id="TBC1" class="input-count" value="0" inputmode="numeric" oninput="calculate()" onfocus="this.select()"></div>
+            <div><input type="text" id="TBS1" class="input-subtotal" readonly tabindex="-1"></div>
+        </div>
+        <div class="row">
+            <div class="label">中高生</div>
+            <div><input type="number" id="TBP2" class="input-unit" readonly tabindex="-1"></div>
+            <div><input type="number" id="TBC2" class="input-count" value="0" inputmode="numeric" oninput="calculate()" onfocus="this.select()"></div>
+            <div><input type="text" id="TBS2" class="input-subtotal" readonly tabindex="-1"></div>
+        </div>
+        <div class="row">
+            <div class="label">小学生</div>
+            <div><input type="number" id="TBP3" class="input-unit" readonly tabindex="-1"></div>
+            <div><input type="number" id="TBC3" class="input-count" value="0" inputmode="numeric" oninput="calculate()" onfocus="this.select()"></div>
+            <div><input type="text" id="TBS3" class="input-subtotal" readonly tabindex="-1"></div>
+        </div>
+        <div class="row">
+            <div class="label">障/大人</div>
+            <div><input type="number" id="TBP4" class="input-unit" readonly tabindex="-1"></div>
+            <div><input type="number" id="TBC4" class="input-count" value="0" inputmode="numeric" oninput="calculate()" onfocus="this.select()"></div>
+            <div><input type="text" id="TBS4" class="input-subtotal" readonly tabindex="-1"></div>
+        </div>
+        <div class="row">
+            <div class="label">障/中高</div>
+            <div><input type="number" id="TBP5" class="input-unit" readonly tabindex="-1"></div>
+            <div><input type="number" id="TBC5" class="input-count" value="0" inputmode="numeric" oninput="calculate()" onfocus="this.select()"></div>
+            <div><input type="text" id="TBS5" class="input-subtotal" readonly tabindex="-1"></div>
+        </div>
+        <div class="row">
+            <div class="label">障/小学</div>
+            <div><input type="number" id="TBP6" class="input-unit" readonly tabindex="-1"></div>
+            <div><input type="number" id="TBC6" class="input-count" value="0" inputmode="numeric" oninput="calculate()" onfocus="this.select()"></div>
+            <div><input type="text" id="TBS6" class="input-subtotal" readonly tabindex="-1"></div>
+        </div>
+        
+        <div class="total-section">
+            <div style="font-weight:bold; font-size:1.1em; color:#000;">合計金額（税込）</div>
+            <input type="text" id="TOTAL_TAXIN" class="total-box" value="¥0" readonly tabindex="-1">
+            <div class="tax-row">
+                <div style="flex:1">本体価格<input type="text" id="TOTAL_TAXEX" value="0" readonly tabindex="-1"></div>
+                <div style="flex:1">消費税(10%)<input type="text" id="TOTAL_TAX" value="0" readonly tabindex="-1"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="fee-area">
+        <div class="fee-box fee-10">
+            <h3>手数料 10%</h3>
+            <div class="fee-row"><span>税込手数料</span><input type="text" id="F10_IN" class="emphasized-input" readonly tabindex="-1"></div>
+            <div class="fee-row"><span>手数料(税抜)</span><input type="text" id="F10_EX" readonly tabindex="-1"></div>
+            <div class="fee-row"><span>手数料(税額)</span><input type="text" id="F10_TAX" readonly tabindex="-1"></div>
+            <div class="fee-row"><span>NET額</span><input type="text" id="F10_NET" class="emphasized-input" readonly tabindex="-1"></div>
+        </div>
+        <div class="fee-box fee-15">
+            <h3>手数料 15%</h3>
+            <div class="fee-row"><span>税込手数料</span><input type="text" id="F15_IN" class="emphasized-input" readonly tabindex="-1"></div>
+            <div class="fee-row"><span>手数料(税抜)</span><input type="text" id="F15_EX" readonly tabindex="-1"></div>
+            <div class="fee-row"><span>手数料(税額)</span><input type="text" id="F15_TAX" readonly tabindex="-1"></div>
+            <div class="fee-row"><span>NET額</span><input type="text" id="F15_NET" class="emphasized-input" readonly tabindex="-1"></div>
+        </div>
+    </div>
+
+    <button class="btn-reset" onclick="resetAll()">データをリセット</button>
+</div>
+
+<script>
+    // 料金データ
+    const priceTable = {
+        SB01: [1080, 810, 540, 600, 450, 300],
+        SB02: [1200, 900, 600, 600, 450, 300],
+        SB03: [900, 680, 450, 500, 380, 250]
+    };
+
+    // 計算関数
+    function calculate() {
+        let total = 0;
+        const modeElement = document.querySelector('input[name="mode"]:checked');
+        if (!modeElement) return;
+        
+        const mode = modeElement.id;
+        const prices = priceTable[mode];
+
+        for (let i = 1; i <= 6; i++) {
+            const p = prices[i-1];
+            const countEl = document.getElementById(`TBC${i}`);
+            const c = parseInt(countEl.value) || 0;
+            const sub = p * c;
+            
+            document.getElementById(`TBP${i}`).value = p;
+            document.getElementById(`TBS${i}`).value = sub.toLocaleString();
+            total += sub;
+        }
+
+        // 合計エリア
+        document.getElementById('TOTAL_TAXIN').value = "¥" + total.toLocaleString();
+        const taxEx = Math.ceil(total / 1.1);
+        document.getElementById('TOTAL_TAXEX').value = taxEx.toLocaleString();
+        document.getElementById('TOTAL_TAX').value = (total - taxEx).toLocaleString();
+
+        // 10% 手数料
+        const f10in = Math.floor((total * 0.1) / 10) * 10;
+        const f10ex = Math.ceil(f10in / 1.1);
+        document.getElementById('F10_IN').value = "¥" + f10in.toLocaleString();
+        document.getElementById('F10_EX').value = f10ex.toLocaleString();
+        document.getElementById('F10_TAX').value = (f10in - f10ex).toLocaleString();
+        document.getElementById('F10_NET').value = (total - f10in).toLocaleString();
+
+        // 15% 手数料
+        const f15in = Math.floor((total * 0.15) / 10) * 10;
+        const f15ex = Math.ceil(f15in / 1.1);
+        document.getElementById('F15_IN').value = "¥" + f15in.toLocaleString();
+        document.getElementById('F15_EX').value = f15ex.toLocaleString();
+        document.getElementById('F15_TAX').value = (f15in - f15ex).toLocaleString();
+        document.getElementById('F15_NET').value = (total - f15in).toLocaleString();
+    }
+
+    // リセット関数（グローバルに配置して確実に呼び出し）
+    function resetAll() {
+        // iPhoneプレビュー等でのフリーズを避けるため、一旦確認なしで実行
+        for (let i = 1; i <= 6; i++) {
+            document.getElementById(`TBC${i}`).value = 0;
+        }
+        document.getElementById('SB01').checked = true;
+        calculate();
+        window.scrollTo(0, 0); // 画面を一番上に戻す
+    }
+
+    // 初期起動時の処理
+    window.onload = function() {
+        const now = new Date();
+        const dateBox = document.getElementById('DATEBOX');
+        if (dateBox) {
+            dateBox.innerText = `${now.getFullYear()}年${String(now.getMonth()+1).padStart(2,'0')}月${String(now.getDate()).padStart(2,'0')}日`;
+        }
+        calculate();
+    };
+</script>
+</body>
+</html>
