@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>五稜郭タワー リアルタイム気象・風速情報</title>
+    <style>
+        :root {
+            --primary-blue: #003366;
+            --accent-blue: #007AFF;
+            --bg-gradient: linear-gradient(135deg, #003366 0%, #005599 100%);
+            --card-bg: #ffffff;
+            --text-main: #1a1a1a;
+            --text-sub: #666666;
+            --warning-red: #dc2626;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #f0f4f8;
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 380px;
+        }
+
+        .weather-card { 
+            background: var(--card-bg);
+            border-radius: 24px;
+            box-shadow: 0 15px 35px rgba(0, 51, 102, 0.15);
+            overflow: hidden;
+            border: 1px solid rgba(0, 51, 102, 0.05);
+        }
+
+        .card-header {
+            background: var(--bg-gradient);
+            padding: 15px;
+            color: white;
+            text-align: center;
+        }
+
+        .location-tag {
+            font-size: 0.75rem;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 3px 10px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 5px;
+        }
+
+        .main-display {
+            padding: 20px 20px 10px;
+            text-align: center;
+        }
+
+        .temp-container {
+            display: flex;
+            justify-content: center;
+            align-items: baseline;
+            margin: 5px 0;
+        }
+
+        .temp-val {
+            font-size: 4.5rem;
+            font-weight: 800;
+            color: var(--primary-blue);
+            line-height: 1;
+        }
+
+        .temp-unit {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary-blue);
+            margin-left: 5px;
+        }
+
+        .info-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 10px; 
+            padding: 0 15px 15px;
+        }
+
+        .info-item {
+            background: #f8fafc;
+            padding: 12px 8px;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            text-align: center;
+        }
+
+        .info-label {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--text-sub);
+            margin-bottom: 4px;
+        }
+
+        .info-value {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--accent-blue);
+        }
+
+        .unit {
+            font-size: 0.7rem;
+            margin-left: 2px;
+            font-weight: normal;
+        }
+
+        .footer {
+            background: #f1f5f9;
+            padding: 10px;
+            text-align: center;
+            font-size: 0.7rem;
+            color: #94a3b8;
+        }
+
+        #timer-bar {
+            height: 4px;
+            background: var(--accent-blue);
+            width: 100%;
+            transition: width 1s linear;
+        }
+
+        .wind-warning { color: var(--warning-red) !important; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="weather-card">
+            <div class="card-header">
+                <span class="location-tag">HAKODATE LIVE</span>
+                <div style="font-size: 1.1rem; font-weight: 700;">五稜郭タワー 気象・風速</div>
+            </div>
+            
+            <div id="timer-bar"></div>
+
+            <div class="main-display">
+                <div id="condition-text" style="font-weight: 700; color: var(--text-sub); margin-bottom: 0;">データ更新中...</div>
+                <div class="temp-container">
+                    <span id="temp-val" class="temp-val">--</span>
+                    <span class="temp-unit">°C</span>
+                </div>
+            </div>
+            
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">景観・視界</span>
+                    <span id="visibility-val" class="info-value">--</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">風速・風向</span>
+                    <span id="wind-val" class="info-value">--</span><small id="wind-unit" class="unit">m/s</small>
+                    <div id="wind-dir" style="font-size: 0.7rem; color: #666; font-weight: bold;">--</div>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">10分間降水量</span>
+                    <span id="rain-val" class="info-value">--</span><small class="unit">mm</small>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">湿度</span>
+                    <span id="humidity-val" class="info-value">--</span><small class="unit">%</small>
+                </div>
+            </div>
+
+            <div class="footer">
+                <div id="last-update">取得時刻: --:--</div>
+                <div style="margin-top: 3px;">自動更新まであと <span id="timer-sec">300</span> 秒</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let timeLeft = 300;
+        const AMEDAS_HAKODATE = "11326";
+        const WIND_DIRS = ["北", "北北東", "北東", "東北東", "東", "東南東", "南東", "南南東", "南", "南南西", "南西", "西南西", "西", "西北西", "北西", "北北西"];
+
+        async function fetchWeatherData() {
+            try {
+                const timeRes = await fetch('https://www.jma.go.jp/bosai/amedas/data/latest_time.txt');
+                const timeStr = await timeRes.text();
+                const dataRes = await fetch(`https://www.jma.go.jp/bosai/amedas/data/map/${timeStr.substring(0, 10)}0000.json`);
+                const data = await dataRes.json();
+                
+                const obs = data[AMEDAS_HAKODATE];
+                if (obs) {
+                    // 基本データ反映
+                    document.getElementById('temp-val').innerText = obs.temp[0].toFixed(1);
+                    document.getElementById('rain-val').innerText = (obs.precipitation10m[0] || 0.0).toFixed(1);
+                    document.getElementById('humidity-val').innerText = obs.humidity[0] || "--";
+
+                    // 風速・風向の判定
+                    const windSpeed = obs.wind[0] || 0.0;
+                    const windDirIdx = obs.windDirection[0];
+                    document.getElementById('wind-val').innerText = windSpeed.toFixed(1);
+                    document.getElementById('wind-dir').innerText = WIND_DIRS[windDirIdx] || "静穏";
+                    
+                    // 強風アラート（風速10m/s以上で赤字）
+                    if (windSpeed >= 10) {
+                        document.getElementById('wind-val').classList.add('wind-warning');
+                    } else {
+                        document.getElementById('wind-val').classList.remove('wind-warning');
+                    }
+
+                    // 視界判定
+                    const rain = obs.precipitation10m[0] || 0.0;
+                    let visText = "良好";
+                    let condText = "視界クリア";
+                    if (rain > 0) {
+                        condText = "降水あり";
+                        visText = rain > 0.5 ? "やや不良" : "概ね良好";
+                    }
+                    if (rain > 2.0 || windSpeed > 15) {
+                        visText = "不良";
+                        condText = "悪天候注意";
+                    }
+
+                    document.getElementById('visibility-val').innerText = visText;
+                    document.getElementById('condition-text').innerText = condText;
+                    
+                    const hh = timeStr.substring(8, 10);
+                    const mm = timeStr.substring(10, 12);
+                    document.getElementById('last-update').innerText = `気象台発表: ${hh}時${mm}分`;
+                }
+            } catch (error) {
+                document.getElementById('condition-text').innerText = "再接続中...";
+            }
+            timeLeft = 300;
+        }
+
+        setInterval(() => {
+            timeLeft--;
+            document.getElementById('timer-sec').innerText = timeLeft;
+            document.getElementById('timer-bar').style.width = (timeLeft / 300 * 100) + "%";
+            if (timeLeft <= 0) fetchWeatherData();
+        }, 1000);
+
+        fetchWeatherData();
+    </script>
+</body>
+</html>
